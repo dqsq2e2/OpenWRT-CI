@@ -159,7 +159,15 @@ jobs:
         run: |
           cd ./wrt/package/
 
-          $GITHUB_WORKSPACE/Scripts/Packages.sh
+          # 检查是否为 iStore 配置
+          if [[ "${WRT_CONFIG}" == *"ISTORE"* ]]; then
+            echo "使用 iStore 专用脚本..."
+            $GITHUB_WORKSPACE/Scripts/Packages-iStore.sh
+          else
+            echo "使用标准脚本..."
+            $GITHUB_WORKSPACE/Scripts/Packages.sh
+          fi
+          
           $GITHUB_WORKSPACE/Scripts/Handles.sh
 
       - name: Custom Settings
@@ -168,11 +176,21 @@ jobs:
 
           if [[ "${WRT_CONFIG,,}" == *"test"* ]]; then
             cat $GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt >> .config
+          elif [[ "${WRT_CONFIG}" == *"ISTORE"* ]]; then
+            # iStore 配置不使用 GENERAL.txt
+            cat $GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt >> .config
           else
             cat $GITHUB_WORKSPACE/Config/$WRT_CONFIG.txt $GITHUB_WORKSPACE/Config/GENERAL.txt >> .config
           fi
 
-          $GITHUB_WORKSPACE/Scripts/Settings.sh
+          # 检查是否为 iStore 配置
+          if [[ "${WRT_CONFIG}" == *"ISTORE"* ]]; then
+            echo "使用 iStore 专用设置脚本..."
+            $GITHUB_WORKSPACE/Scripts/Settings-iStore.sh
+          else
+            echo "使用标准设置脚本..."
+            $GITHUB_WORKSPACE/Scripts/Settings.sh
+          fi
 
           make defconfig -j$(nproc) && make clean -j$(nproc)
 
