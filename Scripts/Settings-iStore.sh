@@ -1,0 +1,171 @@
+#!/bin/bash
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2026 VIKINGYFY
+# iStore Edition Settings
+
+echo "=========================================="
+echo "执行 iStore 自定义配置"
+echo "=========================================="
+
+# ---------------------------------------------------------
+# 1. 基础配置（继承原有逻辑）
+# ---------------------------------------------------------
+#移除luci-app-attendedsysupgrade
+sed -i "/attendedsysupgrade/d" $(find ./feeds/luci/collections/ -type f -name "Makefile")
+#修改默认主题
+sed -i "s/luci-theme-bootstrap/luci-theme-$WRT_THEME/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
+#修改immortalwrt.lan关联IP
+sed -i "s/192\.168\.[0-9]*\.[0-9]*/$WRT_IP/g" $(find ./feeds/luci/modules/luci-mod-system/ -type f -name "flash.js")
+#添加编译日期标识
+sed -i "s/(\(luciversion || ''\))/(\1) + (' \/ $WRT_MARK-$WRT_DATE')/g" $(find ./feeds/luci/modules/luci-mod-status/ -type f -name "10_system.js")
+
+WIFI_SH=$(find ./target/linux/{mediatek/filogic,qualcommax}/base-files/etc/uci-defaults/ -type f -name "*set-wireless.sh" 2>/dev/null)
+WIFI_UC="./package/network/config/wifi-scripts/files/lib/wifi/mac80211.uc"
+if [ -f "$WIFI_SH" ]; then
+	#修改WIFI名称
+	sed -i "s/BASE_SSID='.*'/BASE_SSID='$WRT_SSID'/g" $WIFI_SH
+	#修改WIFI密码
+	sed -i "s/BASE_WORD='.*'/BASE_WORD='$WRT_WORD'/g" $WIFI_SH
+elif [ -f "$WIFI_UC" ]; then
+	#修改WIFI名称
+	sed -i "s/ssid='.*'/ssid='$WRT_SSID'/g" $WIFI_UC
+	#修改WIFI密码
+	sed -i "s/key='.*'/key='$WRT_WORD'/g" $WIFI_UC
+	#修改WIFI地区
+	sed -i "s/country='.*'/country='CN'/g" $WIFI_UC
+	#修改WIFI加密
+	sed -i "s/encryption='.*'/encryption='psk2+ccmp'/g" $WIFI_UC
+fi
+
+CFG_FILE="./package/base-files/files/bin/config_generate"
+#修改默认IP地址
+sed -i "s/192\.168\.[0-9]*\.[0-9]*/$WRT_IP/g" $CFG_FILE
+#修改默认主机名
+sed -i "s/hostname='.*'/hostname='$WRT_NAME'/g" $CFG_FILE
+
+# ---------------------------------------------------------
+# 2. iStore 特定配置
+# ---------------------------------------------------------
+echo ">>> 配置 iStore 相关设置..."
+
+#配置文件修改
+echo "CONFIG_PACKAGE_luci=y" >> ./.config
+echo "CONFIG_LUCI_LANG_zh_Hans=y" >> ./.config
+echo "CONFIG_PACKAGE_luci-theme-$WRT_THEME=y" >> ./.config
+echo "CONFIG_PACKAGE_luci-app-$WRT_THEME-config=y" >> ./.config
+
+# 强制使用 opkg 包管理器
+echo "CONFIG_USE_APK=n" >> ./.config
+echo "CONFIG_PACKAGE_opkg=y" >> ./.config
+
+#手动调整的插件
+if [ -n "$WRT_PACKAGE" ]; then
+	echo -e "$WRT_PACKAGE" >> ./.config
+fi
+
+#无WIFI配置标志
+if [[ "${WRT_CONFIG,,}" == *"wifi"* && "${WRT_CONFIG,,}" == *"no"* ]]; then
+	echo "WRT_WIFI=wifi-no" >> $GITHUB_ENV
+fi
+
+# ---------------------------------------------------------
+# 3. QuickStart 首页温度显示修复
+# ---------------------------------------------------------
+echo ">>> 执行 QuickStart 温度显示修复..."
+
+# 获取 GitHub Workspace 根目录
+if [ -n "$GITHUB_WORKSPACE" ]; then
+    REPO_ROOT="$GITHUB_WORKSPACE"
+else
+    REPO_ROOT=$(dirname "$(readlink -f "$0")")/../
+fi
+
+CUSTOM_LUA="$REPO_ROOT/Files/istore/istore_backend.lua"
+
+# 查找目标文件 (feeds 和 package 都找)
+TARGET_LUA=$(find feeds package -name "istore_backend.lua" -type f 2>/dev/null | head -n 1)
+
+if [ -n "$TARGET_LUA" ]; then
+    echo "定位到目标文件: $TARGET_LUA"
+    if [ -f "$CUSTOM_LUA" ]; then
+        echo "正在覆盖自定义文件..."
+        cp -f "$CUSTOM_LUA" "$TARGET_LUA"
+        if cmp -s "$CUSTOM_LUA" "$TARGET_LUA"; then
+            echo "✅ QuickStart 温度显示修复成功"
+        else
+            echo "❌ 错误: 文件复制校验失败"
+        fi
+    else
+        echo "⚠️ 警告: 仓库中未找到自定义文件 $CUSTOM_LUA"
+    fi
+else
+    echo "⚠️ 警告: 未在源码中找到 istore_backend.lua，跳过修复"
+    echo "   (这是正常的，如果 iStore feeds 还未更新)"
+fi
+
+# ---------------------------------------------------------
+# 4. 升级 Golang（适配 SNAPSHOT）
+# ---------------------------------------------------------
+echo ">>> 升级 Golang 到最新版本..."
+if [ -d "feeds/packages/lang/golang" ]; then
+	rm -rf feeds/packages/lang/golang
+	git clone https://github.com/sbwml/packages_lang_golang -b 26.x feeds/packages/lang/golang
+	echo "✅ Golang 已升级到 26.x"
+fi
+
+# ---------------------------------------------------------
+# 5. 网络参数优化（sysctl）
+# ---------------------------------------------------------
+echo ">>> 配置网络优化参数..."
+mkdir -p files/etc/sysctl.d/
+
+cat > files/etc/sysctl.d/99-istore-optimize.conf << 'SYSCTL'
+# ---------------------------------------------------------
+# Conntrack（代理高并发必需）
+# ---------------------------------------------------------
+net.netfilter.nf_conntrack_max=32768
+net.netfilter.nf_conntrack_tcp_timeout_established=3600
+net.netfilter.nf_conntrack_udp_timeout=60
+net.netfilter.nf_conntrack_udp_timeout_stream=120
+
+# ---------------------------------------------------------
+# TCP 优化
+# ---------------------------------------------------------
+net.core.netdev_max_backlog=2048
+net.core.somaxconn=2048
+net.ipv4.tcp_max_syn_backlog=2048
+net.ipv4.tcp_fastopen=3
+net.ipv4.tcp_slow_start_after_idle=0
+net.ipv4.tcp_tw_reuse=1
+net.ipv4.tcp_fin_timeout=30
+net.ipv4.tcp_keepalive_time=600
+net.ipv4.tcp_keepalive_intvl=15
+net.ipv4.tcp_keepalive_probes=5
+net.ipv4.tcp_max_tw_buckets=8192
+
+# ---------------------------------------------------------
+# 缓冲区（适配 256MB 路由器）
+# ---------------------------------------------------------
+net.core.rmem_max=4194304
+net.core.wmem_max=4194304
+net.ipv4.tcp_rmem=4096 131072 4194304
+net.ipv4.tcp_wmem=4096 65536 4194304
+net.ipv4.udp_mem=8192 12288 16384
+
+# ---------------------------------------------------------
+# 本地端口范围
+# ---------------------------------------------------------
+net.ipv4.ip_local_port_range=1024 65535
+SYSCTL
+
+echo "✅ 网络优化参数已写入"
+
+# ---------------------------------------------------------
+# 6. 修改默认 IP (可选)
+# ---------------------------------------------------------
+# 如果需要修改默认IP，取消下面的注释
+# sed -i 's/192.168.1.1/192.168.30.1/g' package/base-files/files/bin/config_generate
+
+echo "=========================================="
+echo "✅ iStore 配置完成"
+echo "=========================================="
