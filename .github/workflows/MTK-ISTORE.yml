@@ -16,14 +16,14 @@ jobs:
     with:
       WRT_CONFIG: MEDIATEK-ISTORE-NO
       WRT_THEME: argon
-      WRT_NAME: OpenWrt
-      WRT_SSID: OpenWrt
-      WRT_WORD: password
-      WRT_IP: 192.168.1.1
-      WRT_PW: password
-      WRT_REPO: https://github.com/immortalwrt/immortalwrt.git
-      WRT_BRANCH: master
-      WRT_SOURCE: immortalwrt/immortalwrt
+      WRT_NAME: OWRT
+      WRT_SSID: OWRT
+      WRT_WORD: 12345678
+      WRT_IP: 192.168.10.1
+      WRT_PW: 无
+      WRT_REPO: https://github.com/VIKINGYFY/immortalwrt.git
+      WRT_BRANCH: owrt
+      WRT_SOURCE: VIKINGYFY/immortalwrt
       WRT_PACKAGE: |
         # iStore 生态
         CONFIG_PACKAGE_luci-app-store=y
