@@ -576,6 +576,29 @@ CONFIG_PACKAGE_luci-app-cifs-mount=n
 # CONFIG_PACKAGE_TURBOACC_INCLUDE_FLOW_OFFLOADING is not set
 CONFIG_PACKAGE_TURBOACC_INCLUDE_NO_FASTPATH=y
 
+# 禁用 xtables-addons（编译失败）
+CONFIG_PACKAGE_xtables-addons=n
+CONFIG_PACKAGE_kmod-ipt-account=n
+CONFIG_PACKAGE_kmod-ipt-chaos=n
+CONFIG_PACKAGE_kmod-ipt-condition=n
+CONFIG_PACKAGE_kmod-ipt-delude=n
+CONFIG_PACKAGE_kmod-ipt-dhcpmac=n
+CONFIG_PACKAGE_kmod-ipt-dnetmap=n
+CONFIG_PACKAGE_kmod-ipt-fuzzy=n
+CONFIG_PACKAGE_kmod-ipt-geoip=n
+CONFIG_PACKAGE_kmod-ipt-gradm=n
+CONFIG_PACKAGE_kmod-ipt-iface=n
+CONFIG_PACKAGE_kmod-ipt-ipp2p=n
+CONFIG_PACKAGE_kmod-ipt-ipv4options=n
+CONFIG_PACKAGE_kmod-ipt-length2=n
+CONFIG_PACKAGE_kmod-ipt-logmark=n
+CONFIG_PACKAGE_kmod-ipt-lscan=n
+CONFIG_PACKAGE_kmod-ipt-lua=n
+CONFIG_PACKAGE_kmod-ipt-psd=n
+CONFIG_PACKAGE_kmod-ipt-quota2=n
+CONFIG_PACKAGE_kmod-ipt-tarpit=n
+CONFIG_PACKAGE_kmod-xt-geoip=n
+
 # ========================================
 # 编译优化
 # ========================================

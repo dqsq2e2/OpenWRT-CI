@@ -104,7 +104,7 @@ else
 fi
 
 # ---------------------------------------------------------
-# 4. 升级 Golang（适配 SNAPSHOT）
+# 4. 升级 Golang（适配 owrt）
 # ---------------------------------------------------------
 echo ">>> 升级 Golang 到最新版本..."
 if [ -d "feeds/packages/lang/golang" ]; then
@@ -114,7 +114,22 @@ if [ -d "feeds/packages/lang/golang" ]; then
 fi
 
 # ---------------------------------------------------------
-# 5. 网络参数优化（sysctl）
+# 5. 修复 xtables-addons 编译问题
+# ---------------------------------------------------------
+echo ">>> 修复 xtables-addons 编译问题..."
+# xtables-addons 在新内核上有兼容性问题，直接禁用
+if [ -d "feeds/packages/net/xtables-addons" ]; then
+	echo "发现 xtables-addons，将其标记为禁用..."
+	# 在 .config 中强制禁用
+	echo "CONFIG_PACKAGE_xtables-addons=n" >> ./.config
+	echo "CONFIG_PACKAGE_kmod-ipt-account=n" >> ./.config
+	echo "✅ xtables-addons 已禁用"
+else
+	echo "未发现 xtables-addons，跳过"
+fi
+
+# ---------------------------------------------------------
+# 6. 网络参数优化（sysctl）
 # ---------------------------------------------------------
 echo ">>> 配置网络优化参数..."
 mkdir -p files/etc/sysctl.d/
@@ -161,7 +176,7 @@ SYSCTL
 echo "✅ 网络优化参数已写入"
 
 # ---------------------------------------------------------
-# 6. 修改默认 IP (可选)
+# 7. 修改默认 IP (可选)
 # ---------------------------------------------------------
 # 如果需要修改默认IP，取消下面的注释
 # sed -i 's/192.168.1.1/192.168.30.1/g' package/base-files/files/bin/config_generate
