@@ -210,45 +210,34 @@ echo "✅ 网络优化参数已写入"
 # ---------------------------------------------------------
 echo ">>> 修复 kmod-iptables 冲突（owrt 分支特有问题）..."
 
-# 检查是否需要修复
-if [ -f ".kmod_iptables_fix_needed" ]; then
-    echo "检测到 kmod-iptables 冲突修复标记"
-    
-    # 强制禁用 kmod-iptables
-    # 在 owrt 分支中，kmod-iptables 和 kmod-nf-ipt 提供相同的文件导致冲突
-    # 解决方案：禁用 kmod-iptables，让 kmod-nf-ipt 提供这些文件
-    
-    echo "正在从配置中移除 kmod-iptables..."
-    sed -i '/CONFIG_PACKAGE_kmod-iptables/d' .config 2>/dev/null || true
-    echo '# CONFIG_PACKAGE_kmod-iptables is not set' >> .config
-    
-    # 确保 iptables-nft 和 nftables 保持启用
-    echo "确保 iptables-nft 和 nftables 保持启用..."
-    sed -i '/CONFIG_PACKAGE_iptables-nft/d' .config 2>/dev/null || true
-    sed -i '/CONFIG_PACKAGE_ip6tables-nft/d' .config 2>/dev/null || true
-    sed -i '/CONFIG_PACKAGE_nftables/d' .config 2>/dev/null || true
-    echo 'CONFIG_PACKAGE_iptables-nft=y' >> .config
-    echo 'CONFIG_PACKAGE_ip6tables-nft=y' >> .config
-    echo 'CONFIG_PACKAGE_nftables=y' >> .config
-    
-    # 重新运行 defconfig 以解析依赖
-    echo "重新解析配置依赖..."
-    make defconfig
-    
-    # 验证修复
-    if grep -q "# CONFIG_PACKAGE_kmod-iptables is not set" .config; then
-        echo "✅ kmod-iptables 已成功禁用"
-    else
-        echo "⚠️ 警告: kmod-iptables 禁用可能未生效"
-    fi
-    
-    # 删除标记文件
-    rm -f .kmod_iptables_fix_needed
-    
-    echo "✅ kmod-iptables 冲突修复完成"
+# 强制禁用 kmod-iptables（无论是否有标记文件）
+# 在 owrt 分支中，kmod-iptables 和 kmod-nf-ipt 提供相同的文件导致冲突
+# 解决方案：禁用 kmod-iptables，让 kmod-nf-ipt 提供这些文件
+
+echo "正在从配置中移除 kmod-iptables..."
+sed -i '/CONFIG_PACKAGE_kmod-iptables/d' .config 2>/dev/null || true
+echo '# CONFIG_PACKAGE_kmod-iptables is not set' >> .config
+
+# 确保 iptables-nft 和 nftables 保持启用
+echo "确保 iptables-nft 和 nftables 保持启用..."
+sed -i '/CONFIG_PACKAGE_iptables-nft=/d' .config 2>/dev/null || true
+sed -i '/CONFIG_PACKAGE_ip6tables-nft=/d' .config 2>/dev/null || true
+sed -i '/CONFIG_PACKAGE_nftables=/d' .config 2>/dev/null || true
+echo 'CONFIG_PACKAGE_iptables-nft=y' >> .config
+echo 'CONFIG_PACKAGE_ip6tables-nft=y' >> .config
+echo 'CONFIG_PACKAGE_nftables=y' >> .config
+
+# 验证修复
+if grep -q "# CONFIG_PACKAGE_kmod-iptables is not set" .config; then
+    echo "✅ kmod-iptables 已成功禁用"
 else
-    echo "ℹ️ 未检测到 kmod-iptables 冲突修复标记，跳过"
+    echo "⚠️ 警告: kmod-iptables 禁用可能未生效"
 fi
+
+# 删除标记文件（如果存在）
+rm -f .kmod_iptables_fix_needed
+
+echo "✅ kmod-iptables 冲突修复完成"
 
 echo "=========================================="
 echo "✅ iStore 配置完成"

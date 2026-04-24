@@ -93,6 +93,11 @@ CONFIG_KERNEL_DEBUG_INFO_BTF=n
 # ========================================
 # iptables/nftables 配置（极简配置，参考 wrt_release-dev）
 # ========================================
+# ⚠️ 关键修复：owrt 分支特有问题
+# kmod-iptables 和 kmod-nf-ipt 提供相同的文件（ip_tables.ko, x_tables.ko）导致冲突
+# 解决方案：禁用 kmod-iptables，让 kmod-nf-ipt 提供这些文件
+# CONFIG_PACKAGE_kmod-iptables is not set
+
 # 用户空间工具 - iptables-nft 兼容层
 CONFIG_PACKAGE_iptables-nft=y
 CONFIG_PACKAGE_ip6tables-nft=y
