@@ -89,6 +89,14 @@ fi
 
 echo "✅ iStore feeds 添加完成"
 
+# 重新更新和安装 feeds（确保 iStore 被安装）
+echo ">>> 重新更新和安装 feeds..."
+cd ..
+./scripts/feeds update -a
+./scripts/feeds install -a
+cd package
+echo "✅ Feeds 重新安装完成"
+
 # ========================================
 # 主题
 # ========================================

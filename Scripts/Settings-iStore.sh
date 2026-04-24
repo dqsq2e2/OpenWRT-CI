@@ -83,10 +83,11 @@ fi
 CUSTOM_LUA="$REPO_ROOT/Files/istore/istore_backend.lua"
 
 # 查找目标文件 (feeds 和 package 都找)
+# 注意：此时 iStore feeds 应该已经在 Packages-iStore.sh 中重新安装过了
 TARGET_LUA=$(find feeds package -name "istore_backend.lua" -type f 2>/dev/null | head -n 1)
 
 if [ -n "$TARGET_LUA" ]; then
-    echo "定位到目标文件: $TARGET_LUA"
+    echo "✅ 定位到目标文件: $TARGET_LUA"
     if [ -f "$CUSTOM_LUA" ]; then
         echo "正在覆盖自定义文件..."
         cp -f "$CUSTOM_LUA" "$TARGET_LUA"
@@ -99,8 +100,11 @@ if [ -n "$TARGET_LUA" ]; then
         echo "⚠️ 警告: 仓库中未找到自定义文件 $CUSTOM_LUA"
     fi
 else
-    echo "⚠️ 警告: 未在源码中找到 istore_backend.lua，跳过修复"
-    echo "   (这是正常的，如果 iStore feeds 还未更新)"
+    echo "❌ 错误: 未在源码中找到 istore_backend.lua"
+    echo "   可能原因："
+    echo "   1. iStore feeds 未正确安装"
+    echo "   2. Packages-iStore.sh 中的 feeds 重新安装失败"
+    echo "   请检查 Packages-iStore.sh 的执行日志"
 fi
 
 # ---------------------------------------------------------
