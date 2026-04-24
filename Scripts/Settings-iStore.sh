@@ -114,19 +114,23 @@ if [ -d "feeds/packages/lang/golang" ]; then
 fi
 
 # ---------------------------------------------------------
-# 5. 修复 xtables-addons 编译问题
+# 5. 再次确认移除 xtables-addons
 # ---------------------------------------------------------
-echo ">>> 修复 xtables-addons 编译问题..."
-# xtables-addons 在新内核上有兼容性问题，直接禁用
-if [ -d "feeds/packages/net/xtables-addons" ]; then
-	echo "发现 xtables-addons，将其标记为禁用..."
-	# 在 .config 中强制禁用
-	echo "CONFIG_PACKAGE_xtables-addons=n" >> ./.config
-	echo "CONFIG_PACKAGE_kmod-ipt-account=n" >> ./.config
-	echo "✅ xtables-addons 已禁用"
-else
-	echo "未发现 xtables-addons，跳过"
-fi
+echo ">>> 再次确认移除 xtables-addons..."
+
+# 移除源码目录
+rm -rf feeds/packages/net/xtables-addons 2>/dev/null || true
+rm -rf package/feeds/packages/xtables-addons 2>/dev/null || true
+
+# 移除编译目录
+rm -rf build_dir/target-*/linux-*/xtables-addons* 2>/dev/null || true
+
+# 从配置中移除
+sed -i '/xtables-addons/d' .config 2>/dev/null || true
+sed -i '/kmod-ipt-account/d' .config 2>/dev/null || true
+sed -i '/kmod-xt-/d' .config 2>/dev/null || true
+
+echo "✅ xtables-addons 已彻底移除"
 
 # ---------------------------------------------------------
 # 6. 网络参数优化（sysctl）

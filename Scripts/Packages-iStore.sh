@@ -48,6 +48,30 @@ echo "开始安装 iStore 生态插件"
 echo "=========================================="
 
 # ========================================
+# 移除有问题的包
+# ========================================
+echo ">>> 移除 xtables-addons（编译失败）..."
+
+# 当前在 wrt/package/ 目录
+# feeds 在 wrt/feeds/ 目录
+if [ -d "../feeds/packages/net/xtables-addons" ]; then
+	rm -rf ../feeds/packages/net/xtables-addons
+	echo "✅ xtables-addons 已从 feeds 移除"
+fi
+
+# 同时检查 package/feeds 目录
+if [ -d "./feeds/packages/xtables-addons" ]; then
+	rm -rf ./feeds/packages/xtables-addons
+	echo "✅ xtables-addons 已从 package/feeds 移除"
+fi
+
+# 返回上级目录执行 feeds uninstall
+cd ..
+./scripts/feeds uninstall xtables-addons 2>/dev/null || true
+echo "✅ xtables-addons 已从 feeds 索引移除"
+cd package
+
+# ========================================
 # iStore 生态系统
 # ========================================
 echo ">>> 添加 iStore feeds..."
