@@ -69,6 +69,28 @@ fi
 cd ..
 ./scripts/feeds uninstall xtables-addons 2>/dev/null || true
 echo "✅ xtables-addons 已从 feeds 索引移除"
+
+# ========================================
+# 移除 mt76 无线驱动（NoWiFi 配置）
+# ========================================
+echo ">>> 移除 mt76 无线驱动（NoWiFi 配置）..."
+
+# 删除 mt76 源码目录
+if [ -d "package/kernel/mt76" ]; then
+	rm -rf package/kernel/mt76
+	echo "✅ mt76 源码已移除"
+fi
+
+# 从 feeds 中移除
+./scripts/feeds uninstall kmod-mt76-core 2>/dev/null || true
+./scripts/feeds uninstall kmod-mt76-connac 2>/dev/null || true
+./scripts/feeds uninstall kmod-mt7915e 2>/dev/null || true
+./scripts/feeds uninstall kmod-mt7916-firmware 2>/dev/null || true
+./scripts/feeds uninstall kmod-mt7986-firmware 2>/dev/null || true
+./scripts/feeds uninstall mt7986-wo-firmware 2>/dev/null || true
+
+echo "✅ mt76 无线驱动已彻底移除"
+
 cd package
 
 # ========================================

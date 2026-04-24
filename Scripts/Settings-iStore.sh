@@ -118,23 +118,39 @@ if [ -d "feeds/packages/lang/golang" ]; then
 fi
 
 # ---------------------------------------------------------
-# 5. 再次确认移除 xtables-addons
+# 5. 再次确认移除 xtables-addons 和 mt76
 # ---------------------------------------------------------
-echo ">>> 再次确认移除 xtables-addons..."
+echo ">>> 再次确认移除 xtables-addons 和 mt76..."
 
-# 移除源码目录
+# 移除 xtables-addons 源码目录
 rm -rf feeds/packages/net/xtables-addons 2>/dev/null || true
 rm -rf package/feeds/packages/xtables-addons 2>/dev/null || true
 
-# 移除编译目录
+# 移除 xtables-addons 编译目录
 rm -rf build_dir/target-*/linux-*/xtables-addons* 2>/dev/null || true
 
-# 从配置中移除
+# 从配置中移除 xtables-addons
 sed -i '/xtables-addons/d' .config 2>/dev/null || true
 sed -i '/kmod-ipt-account/d' .config 2>/dev/null || true
 sed -i '/kmod-xt-/d' .config 2>/dev/null || true
 
 echo "✅ xtables-addons 已彻底移除"
+
+# 移除 mt76 无线驱动（NoWiFi 配置）
+echo ">>> 再次确认移除 mt76 无线驱动..."
+
+# 删除 mt76 源码目录
+rm -rf package/kernel/mt76 2>/dev/null || true
+
+# 删除 mt76 编译目录
+rm -rf build_dir/target-*/linux-*/mt76* 2>/dev/null || true
+
+# 从配置中移除 mt76
+sed -i '/CONFIG_PACKAGE_kmod-mt76/d' .config 2>/dev/null || true
+sed -i '/CONFIG_PACKAGE_kmod-mt79/d' .config 2>/dev/null || true
+sed -i '/CONFIG_PACKAGE_mt79.*-firmware/d' .config 2>/dev/null || true
+
+echo "✅ mt76 无线驱动已彻底移除"
 
 # ---------------------------------------------------------
 # 6. 网络参数优化（sysctl）
