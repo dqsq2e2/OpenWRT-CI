@@ -145,6 +145,22 @@ UPDATE_PACKAGE "diskman" "lisaac/luci-app-diskman" "master"
 echo ">>> 安装定时任务..."
 UPDATE_PACKAGE "taskplan" "sirpdboy/luci-app-taskplan" "master"
 
+# ========================================
+# 修复 owrt 分支的 kmod-iptables 冲突
+# ========================================
+echo ">>> 修复 kmod-iptables 冲突（owrt 分支特有问题）..."
+
+cd ..
+
+# 在 .config 生成后，强制禁用 kmod-iptables
+# 这个操作需要在 make defconfig 之后执行
+# 所以我们创建一个标记文件，让 Settings 脚本处理
+touch .kmod_iptables_fix_needed
+
+echo "✅ kmod-iptables 冲突修复标记已创建"
+
+cd package
+
 echo "=========================================="
 echo "✅ iStore 插件安装完成"
 echo "=========================================="
