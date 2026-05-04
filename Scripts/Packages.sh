@@ -78,6 +78,11 @@ UPDATE_PACKAGE "timecontrol" "sirpdboy/luci-app-timecontrol" "main"
 UPDATE_PACKAGE "viking" "VIKINGYFY/packages" "main" "" "gecoosac luci-app-timewol luci-app-wolplus"
 UPDATE_PACKAGE "vnt" "lmq8267/luci-app-vnt" "main"
 
+#iStore 软件商店体系（官方源）
+UPDATE_PACKAGE "istore" "linkease/istore" "main"
+UPDATE_PACKAGE "nas-packages" "linkease/nas-packages" "master" "pkg"
+UPDATE_PACKAGE "nas-luci" "linkease/nas-packages-luci" "main" "pkg"
+
 #更新软件包版本
 UPDATE_VERSION() {
 	local PKG_NAME=$1

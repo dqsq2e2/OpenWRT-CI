@@ -47,6 +47,43 @@ if [ -f "$GITHUB_WORKSPACE/Config/PRIVATE.txt" ]; then
 	cat $GITHUB_WORKSPACE/Config/PRIVATE.txt >> ./.config
 fi
 
+#配置 opkg 系统软件源（24.10 版本）
+echo "配置 opkg 系统软件源..."
+DEFAULT_SETTINGS_DIR="./package/emortal/default-settings"
+if [ -d "$DEFAULT_SETTINGS_DIR" ]; then
+	DISTFEEDS_CONF="$DEFAULT_SETTINGS_DIR/files/99-distfeeds.conf"
+	
+	# 创建 distfeeds.conf 文件
+	mkdir -p "$DEFAULT_SETTINGS_DIR/files"
+	cat > "$DISTFEEDS_CONF" << 'EOF'
+src/gz openwrt_base https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base/
+src/gz openwrt_luci https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci/
+src/gz openwrt_packages https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/packages/
+src/gz openwrt_routing https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/routing/
+src/gz openwrt_telephony https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/telephony/
+EOF
+	
+	# 修改 Makefile 以安装 distfeeds.conf
+	if ! grep -q "99-distfeeds.conf" "$DEFAULT_SETTINGS_DIR/Makefile"; then
+		sed -i "/define Package\/default-settings\/install/a\\
+\\t\$(INSTALL_DIR) \$(1)/etc\\n\\
+\\t\$(INSTALL_DATA) ./files/99-distfeeds.conf \$(1)/etc/99-distfeeds.conf\n" "$DEFAULT_SETTINGS_DIR/Makefile"
+	fi
+	
+	# 修改 99-default-settings 以移动文件到正确位置
+	if [ -f "$DEFAULT_SETTINGS_DIR/files/99-default-settings" ]; then
+		if ! grep -q "99-distfeeds.conf" "$DEFAULT_SETTINGS_DIR/files/99-default-settings"; then
+			sed -i "/exit 0/i\\
+[ -f '/etc/99-distfeeds.conf' ] && mv '/etc/99-distfeeds.conf' '/etc/opkg/distfeeds.conf'\\n\\
+sed -ri '/check_signature/s@^[^#]@#&@' /etc/opkg.conf\n" "$DEFAULT_SETTINGS_DIR/files/99-default-settings"
+		fi
+	fi
+	
+	echo "✅ opkg 系统软件源配置完成（ImmortalWrt 24.10）"
+else
+	echo "⚠️  警告: default-settings 目录不存在，跳过软件源配置"
+fi
+
 #手动调整的插件
 if [ -n "$WRT_PACKAGE" ]; then
 	echo -e "$WRT_PACKAGE" >> ./.config
