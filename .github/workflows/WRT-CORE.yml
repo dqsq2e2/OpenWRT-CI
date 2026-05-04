@@ -112,6 +112,10 @@ jobs:
         run: |
           find ./ -maxdepth 3 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
 
+      - name: Add iStore Feeds
+        run: |
+          $GITHUB_WORKSPACE/Scripts/Feeds.sh
+
       - name: Check Caches
         id: check-cache
         if: env.WRT_TEST != 'true'
