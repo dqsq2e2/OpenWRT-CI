@@ -4,6 +4,16 @@
 
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
+#修复 OpenSSL 3.5.6 编译错误
+OPENSSL_FIX="$GITHUB_WORKSPACE/OpenWRT-CI-main/Scripts/Fix-OpenSSL-3.5.6.sh"
+if [ -f "$OPENSSL_FIX" ]; then
+	echo " " && cd "$GITHUB_WORKSPACE/wrt/"
+	
+	bash "$OPENSSL_FIX"
+	
+	cd $PKG_PATH && echo "openssl has been fixed!"
+fi
+
 #修复 netfilter 模块冲突（opkg + Docker 环境）
 NETFILTER_FIX="$GITHUB_WORKSPACE/OpenWRT-CI-main/Scripts/Fix-Netfilter-Conflict.sh"
 if [ -f "$NETFILTER_FIX" ]; then
