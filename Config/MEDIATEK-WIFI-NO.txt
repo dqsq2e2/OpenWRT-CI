@@ -1,5 +1,5 @@
 #包管理器配置 - 使用 opkg 而不是 apk
-CONFIG_USE_APK=n
+CONFIG_USE_APK=y
 CONFIG_PACKAGE_opkg=y
 
 #设备平台
