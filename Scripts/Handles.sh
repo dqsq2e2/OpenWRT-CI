@@ -4,6 +4,16 @@
 
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
+#修复 netfilter 模块冲突（opkg + Docker 环境）
+NETFILTER_FIX="$GITHUB_WORKSPACE/OpenWRT-CI-main/Scripts/Fix-Netfilter-Conflict.sh"
+if [ -f "$NETFILTER_FIX" ]; then
+	echo " " && cd "$GITHUB_WORKSPACE/wrt/"
+	
+	bash "$NETFILTER_FIX"
+	
+	cd $PKG_PATH && echo "netfilter conflict has been fixed!"
+fi
+
 #预置HomeProxy数据
 if [ -d *"homeproxy"* ]; then
 	echo " "
@@ -91,4 +101,14 @@ if [ -f "$RUST_FILE" ]; then
 	sed -i 's/ci-llvm=true/ci-llvm=false/g' $RUST_FILE
 
 	cd $PKG_PATH && echo "rust has been fixed!"
+fi
+
+#修复 QuickStart 首页温度显示（支持 MT7986A）
+QUICKSTART_FIX="$GITHUB_WORKSPACE/OpenWRT-CI-main/Scripts/Fix-Quickstart-Temperature.sh"
+if [ -f "$QUICKSTART_FIX" ]; then
+	echo " " && cd "$GITHUB_WORKSPACE/wrt/"
+	
+	bash "$QUICKSTART_FIX"
+	
+	cd $PKG_PATH && echo "quickstart temperature has been fixed!"
 fi
