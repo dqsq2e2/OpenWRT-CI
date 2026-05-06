@@ -113,3 +113,10 @@ if [[ "${WRT_TARGET^^}" == *"QUALCOMMAX"* ]]; then
 		echo "qualcommax set up nowifi successfully!"
 	fi
 fi
+
+# 修复 QuickStart 温度显示（在 feeds install 之后执行）
+if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh" ]; then
+	cd ./package/
+	bash "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh"
+	cd ..
+fi
