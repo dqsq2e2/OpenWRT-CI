@@ -102,10 +102,5 @@ if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-Netfilter-Conflict.sh" ]; then
 	bash "$GITHUB_WORKSPACE/Scripts/Fix-Netfilter-Conflict.sh"
 fi
 
-# 修复 QuickStart 温度显示
-if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh" ]; then
-	bash "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh"
-fi
-
 echo " "
 echo "✅ 所有修复脚本执行完成"
