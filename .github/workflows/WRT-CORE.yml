@@ -157,14 +157,6 @@ jobs:
           ./scripts/feeds update -a
           ./scripts/feeds install -a
 
-      - name: Fix QuickStart Temperature
-        run: |
-          cd ./wrt/package/
-
-          if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh" ]; then
-            bash "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh"
-          fi
-
       - name: Custom Packages
         run: |
           cd ./wrt/package/
