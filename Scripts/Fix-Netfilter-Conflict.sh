@@ -40,14 +40,9 @@ sed -i '/^define KernelPackage\/nf-ipt$/,/^endef$/{
 echo "  ✓ 已修改 kmod-nf-ipt 的 FILES 和 AUTOLOAD"
 
 # 同样修复 kmod-nf-ipt6（如果需要）
-if grep -A 5 "^define KernelPackage/nf-ipt6$" "$NETFILTER_MK" | grep -q 'FILES:=.*NF_IPT6-m'; then
-	echo "  → 修改 kmod-nf-ipt6 定义，排除冲突文件..."
-	sed -i '/^define KernelPackage\/nf-ipt6$/,/^endef$/{
-		s|FILES:=\$(foreach mod,\$(NF_IPT6-m),\$(LINUX_DIR)/net/\$(mod)\.ko)|FILES:=$(foreach mod,$(filter-out ipv6/netfilter/ip6_tables,$(NF_IPT6-m)),$(LINUX_DIR)/net/$(mod).ko)|
-		s|AUTOLOAD:=\$(call AutoProbe,\$(notdir \$(NF_IPT6-m)))|AUTOLOAD:=$(call AutoProbe,$(notdir $(filter-out ipv6/netfilter/ip6_tables,$(NF_IPT6-m))))|
-	}' "$NETFILTER_MK"
-	echo "  ✓ 已修改 kmod-nf-ipt6 的 FILES 和 AUTOLOAD"
-fi
+# 注意：ip6_tables.ko 不与 kmod-iptables 冲突，所以不需要排除
+# 只有 ip_tables.ko 和 x_tables.ko 才与 kmod-iptables 冲突
+echo "  ℹ kmod-nf-ipt6 不需要修改（ip6_tables.ko 不冲突）"
 
 echo ""
 echo "✅ Netfilter 模块冲突修复完成"
@@ -55,6 +50,8 @@ echo ""
 echo "修复内容："
 echo "  1. kmod-nf-ipt 排除 ip_tables.ko 和 x_tables.ko"
 echo "  2. 这些文件由 kmod-iptables 提供"
-echo "  3. 避免了 opkg 的文件冲突错误"
-echo "  4. 参考：https://github.com/openwrt/openwrt/issues/22992"
+echo "  3. kmod-nf-ipt6 保持不变（ip6_tables.ko 不冲突）"
+echo "  4. 避免了 opkg 的文件冲突错误"
+echo "  5. 参考：https://github.com/openwrt/openwrt/issues/22992"
 echo ""
+
