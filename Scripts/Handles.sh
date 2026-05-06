@@ -4,26 +4,6 @@
 
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
-#修复 OpenSSL 3.5.6 编译错误
-OPENSSL_FIX="$GITHUB_WORKSPACE/Scripts/Fix-OpenSSL-3.5.6.sh"
-if [ -f "$OPENSSL_FIX" ]; then
-	echo " " && cd "$GITHUB_WORKSPACE/wrt/"
-	
-	bash "$OPENSSL_FIX"
-	
-	cd $PKG_PATH && echo "openssl has been fixed!"
-fi
-
-#修复 netfilter 模块冲突（opkg + Docker 环境）
-NETFILTER_FIX="$GITHUB_WORKSPACE/Scripts/Fix-Netfilter-Conflict.sh"
-if [ -f "$NETFILTER_FIX" ]; then
-	echo " " && cd "$GITHUB_WORKSPACE/wrt/"
-	
-	bash "$NETFILTER_FIX"
-	
-	cd $PKG_PATH && echo "netfilter conflict has been fixed!"
-fi
-
 #预置HomeProxy数据
 if [ -d *"homeproxy"* ]; then
 	echo " "
@@ -113,12 +93,24 @@ if [ -f "$RUST_FILE" ]; then
 	cd $PKG_PATH && echo "rust has been fixed!"
 fi
 
-#修复 QuickStart 首页温度显示（支持 MT7986A）
-QUICKSTART_FIX="$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh"
-if [ -f "$QUICKSTART_FIX" ]; then
-	echo " " && cd "$GITHUB_WORKSPACE/wrt/"
-	
-	bash "$QUICKSTART_FIX"
-	
-	cd $PKG_PATH && echo "quickstart temperature has been fixed!"
+# 执行修复脚本
+echo " "
+echo ">>> 执行修复脚本..."
+
+# 修复 netfilter 模块冲突
+if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-Netfilter-Conflict.sh" ]; then
+	bash "$GITHUB_WORKSPACE/Scripts/Fix-Netfilter-Conflict.sh"
 fi
+
+# 修复 OpenSSL 3.5.6 编译错误
+if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-OpenSSL-3.5.6.sh" ]; then
+	bash "$GITHUB_WORKSPACE/Scripts/Fix-OpenSSL-3.5.6.sh"
+fi
+
+# 修复 QuickStart 温度显示
+if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh" ]; then
+	bash "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh"
+fi
+
+echo " "
+echo "✅ 所有修复脚本执行完成"

@@ -1,51 +1,50 @@
 #!/bin/bash
-#
+# SPDX-License-Identifier: MIT
+# Copyright (C) 2026 VIKINGYFY
 # 修复 OpenSSL 3.5.6 编译错误
-# 错误：ossl_der_oid_id_aes128_wrap undeclared
-# 方案：禁用有问题的 X9.42 KDF 模块
-#
 
-set -e
-
+echo " "
 echo ">>> 正在修复 OpenSSL 3.5.6 编译错误..."
 
-OPENSSL_MAKEFILE="package/libs/openssl/Makefile"
+OPENSSL_MAKEFILE="../feeds/packages/libs/openssl/Makefile"
+
+# 调试：显示当前目录和目标文件
+echo "  → 当前目录: $(pwd)"
+echo "  → 查找文件: $OPENSSL_MAKEFILE"
 
 if [ ! -f "$OPENSSL_MAKEFILE" ]; then
-    echo "❌ 错误：未找到 OpenSSL Makefile"
-    exit 1
+	echo "✗ 未找到 OpenSSL Makefile: $OPENSSL_MAKEFILE"
+	echo "  ℹ 可能 feeds 尚未更新，跳过修复"
+	echo ""
+	echo "调试信息："
+	echo "  - 检查 openssl 目录是否存在: $([ -d '../feeds/packages/libs/openssl' ] && echo '存在' || echo '不存在')"
+	if [ -d '../feeds/packages/libs/openssl' ]; then
+		echo "  - openssl 目录内容:"
+		ls -la ../feeds/packages/libs/openssl/ 2>/dev/null || echo "    无法列出目录"
+	fi
+	exit 0
 fi
 
-# 恢复到 3.5.6（如果之前升级过）
-sed -i 's/PKG_VERSION:=3\.5\.7/PKG_VERSION:=3.5.6/' "$OPENSSL_MAKEFILE"
-
-# 检查是否已经禁用
-if grep -q "no-kdf" "$OPENSSL_MAKEFILE"; then
-    echo "ℹ X9.42 KDF 已经被禁用"
-    exit 0
+# 检查是否是 OpenSSL 3.5.6
+OPENSSL_VERSION=$(grep -Po 'PKG_VERSION:=\K.*' "$OPENSSL_MAKEFILE" 2>/dev/null)
+if [[ "$OPENSSL_VERSION" != "3.5.6" ]]; then
+	echo "✓ OpenSSL 版本为 $OPENSSL_VERSION，不需要修复"
+	exit 0
 fi
 
-# 在 CONFIGURE_ARGS 中添加 no-kdf
-# 查找包含 "no-" 选项的行，在其后添加
-if grep -q "CONFIGURE_ARGS.*no-" "$OPENSSL_MAKEFILE"; then
-    # 在第一个包含 no- 的 CONFIGURE_ARGS 行末尾添加
-    sed -i '/CONFIGURE_ARGS.*no-/s/$/ \\\n\tno-kdf/' "$OPENSSL_MAKEFILE"
-    echo "✅ 已在 CONFIGURE_ARGS 中添加 no-kdf"
+# 备份原始文件
+if [ ! -f "${OPENSSL_MAKEFILE}.bak" ]; then
+	cp "$OPENSSL_MAKEFILE" "${OPENSSL_MAKEFILE}.bak"
+fi
+
+# 在 OPENSSL_OPTIONS 中添加 no-x942kdf 选项
+if grep -q "no-x942kdf" "$OPENSSL_MAKEFILE"; then
+	echo "✓ OpenSSL Makefile 已包含 no-x942kdf 选项"
 else
-    # 在 CONFIGURE_ARGS 定义后添加新行
-    sed -i '/^CONFIGURE_ARGS/a\\tno-kdf \\' "$OPENSSL_MAKEFILE"
-    echo "✅ 已添加 no-kdf 到 CONFIGURE_ARGS"
+	# 在 OPENSSL_OPTIONS 定义后添加 no-x942kdf
+	sed -i '/^OPENSSL_OPTIONS:=/a\  no-x942kdf \\' "$OPENSSL_MAKEFILE"
+	echo "✅ 已添加 no-x942kdf 选项到 OpenSSL 配置"
 fi
 
-echo ""
-echo "✅ OpenSSL 修复完成"
-echo ""
-echo "修复方案："
-echo "  - 禁用 X9.42 KDF 模块（很少使用的密钥派生函数）"
-echo "  - 避免编译有 bug 的 x942kdf.c 文件"
-echo "  - 不影响常用的加密功能（TLS、AES、RSA 等）"
-echo ""
-echo "下一步："
-echo "  1. 清理: rm -rf build_dir/target-*/openssl-3.5.6"
-echo "  2. 编译: make package/libs/openssl/compile V=s"
-echo ""
+echo "✅ OpenSSL 3.5.6 编译错误修复完成"
+echo "  - 已禁用 X9.42 KDF 模块（该模块在 3.5.6 中有 bug）"

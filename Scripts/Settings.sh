@@ -47,50 +47,41 @@ if [ -f "$GITHUB_WORKSPACE/Config/PRIVATE.txt" ]; then
 	cat $GITHUB_WORKSPACE/Config/PRIVATE.txt >> ./.config
 fi
 
-#配置 opkg 系统软件源（参考 wrt_release-main 方法）
+#配置 opkg 系统软件源（24.10 版本）
 echo "配置 opkg 系统软件源..."
-
 DEFAULT_SETTINGS_DIR="./package/emortal/default-settings"
-DISTFEEDS_CONF="$DEFAULT_SETTINGS_DIR/files/99-distfeeds.conf"
-
 if [ -d "$DEFAULT_SETTINGS_DIR" ]; then
-	# 创建 99-distfeeds.conf 文件
+	DISTFEEDS_CONF="$DEFAULT_SETTINGS_DIR/files/99-distfeeds.conf"
+	
+	# 创建 distfeeds.conf 文件
+	mkdir -p "$DEFAULT_SETTINGS_DIR/files"
 	cat > "$DISTFEEDS_CONF" << 'EOF'
-src/gz immortalwrt_core https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/targets/mediatek/filogic/packages
-src/gz immortalwrt_base https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base
-src/gz immortalwrt_luci https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci
-src/gz immortalwrt_packages https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/packages
-src/gz immortalwrt_routing https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/routing
-src/gz immortalwrt_telephony https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/telephony
+src/gz openwrt_base https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/base/
+src/gz openwrt_luci https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/luci/
+src/gz openwrt_packages https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/packages/
+src/gz openwrt_routing https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/routing/
+src/gz openwrt_telephony https://downloads.immortalwrt.org/releases/24.10-SNAPSHOT/packages/aarch64_cortex-a53/telephony/
 EOF
-
-	# 修改 Makefile，添加安装 99-distfeeds.conf 的指令
+	
+	# 修改 Makefile 以安装 distfeeds.conf
 	if ! grep -q "99-distfeeds.conf" "$DEFAULT_SETTINGS_DIR/Makefile"; then
 		sed -i "/define Package\/default-settings\/install/a\\
 \\t\$(INSTALL_DIR) \$(1)/etc\\n\\
-\\t\$(INSTALL_DATA) ./files/99-distfeeds.conf \$(1)/etc/99-distfeeds.conf\\n" "$DEFAULT_SETTINGS_DIR/Makefile"
-		echo "  ✓ 已修改 Makefile，添加 99-distfeeds.conf 安装指令"
+\\t\$(INSTALL_DATA) ./files/99-distfeeds.conf \$(1)/etc/99-distfeeds.conf\n" "$DEFAULT_SETTINGS_DIR/Makefile"
 	fi
-
-	# 修改 99-default-settings，在启动时移动文件并取消签名检查
-	DEFAULT_SETTINGS_FILE="$DEFAULT_SETTINGS_DIR/files/99-default-settings"
-	if [ -f "$DEFAULT_SETTINGS_FILE" ]; then
-		# 在 exit 0 之前插入配置命令
-		if ! grep -q "99-distfeeds.conf" "$DEFAULT_SETTINGS_FILE"; then
+	
+	# 修改 99-default-settings 以移动文件到正确位置
+	if [ -f "$DEFAULT_SETTINGS_DIR/files/99-default-settings" ]; then
+		if ! grep -q "99-distfeeds.conf" "$DEFAULT_SETTINGS_DIR/files/99-default-settings"; then
 			sed -i "/exit 0/i\\
 [ -f '/etc/99-distfeeds.conf' ] && mv '/etc/99-distfeeds.conf' '/etc/opkg/distfeeds.conf'\\n\\
-sed -ri '/check_signature/s@^[^#]@#&@' /etc/opkg.conf\\n" "$DEFAULT_SETTINGS_FILE"
-			echo "  ✓ 已修改 99-default-settings，添加软件源配置和取消签名检查"
+sed -ri '/check_signature/s@^[^#]@#&@' /etc/opkg.conf\n" "$DEFAULT_SETTINGS_DIR/files/99-default-settings"
 		fi
 	fi
-
-	echo "✅ opkg 系统软件源配置完成（ImmortalWrt 24.10-SNAPSHOT）"
-	echo "  - 软件源文件: $DISTFEEDS_CONF"
-	echo "  - 首次启动时自动移动到 /etc/opkg/distfeeds.conf"
-	echo "  - 自动取消 opkg 签名检查"
+	
+	echo "✅ opkg 系统软件源配置完成（ImmortalWrt 24.10）"
 else
-	echo "⚠️  警告: 未找到 default-settings 目录，跳过软件源配置"
-	echo "  路径: $DEFAULT_SETTINGS_DIR"
+	echo "⚠️  警告: default-settings 目录不存在，跳过软件源配置"
 fi
 
 #手动调整的插件
@@ -100,8 +91,6 @@ fi
 
 #无WIFI配置标志
 if [[ "${WRT_CONFIG,,}" == *"wifi"* && "${WRT_CONFIG,,}" == *"no"* ]]; then
-	export WRT_WIFI=wifi-no
-	# 如果在 GitHub Actions 环境中，也写入 GITHUB_ENV
 	if [ -n "$GITHUB_ENV" ]; then
 		echo "WRT_WIFI=wifi-no" >> $GITHUB_ENV
 	fi
@@ -123,4 +112,35 @@ if [[ "${WRT_TARGET^^}" == *"QUALCOMMAX"* ]]; then
 		find $DTS_PATH -type f ! -iname '*nowifi*' -exec sed -i 's/ipq\(6018\|8074\).dtsi/ipq\1-nowifi.dtsi/g' {} +
 		echo "qualcommax set up nowifi successfully!"
 	fi
+fi
+
+
+# 修复 OpenSSL 3.5.6 编译错误（在 feeds install 之后执行）
+echo " "
+echo ">>> 正在修复 OpenSSL 3.5.6 编译错误..."
+
+OPENSSL_MAKEFILE="./feeds/packages/libs/openssl/Makefile"
+
+if [ -f "$OPENSSL_MAKEFILE" ]; then
+	# 检查是否是 OpenSSL 3.5.6
+	OPENSSL_VERSION=$(grep -Po 'PKG_VERSION:=\K.*' "$OPENSSL_MAKEFILE" 2>/dev/null)
+	if [[ "$OPENSSL_VERSION" == "3.5.6" ]]; then
+		# 备份原始文件
+		if [ ! -f "${OPENSSL_MAKEFILE}.bak" ]; then
+			cp "$OPENSSL_MAKEFILE" "${OPENSSL_MAKEFILE}.bak"
+		fi
+		
+		# 在 OPENSSL_OPTIONS 中添加 no-x942kdf 选项
+		if ! grep -q "no-x942kdf" "$OPENSSL_MAKEFILE"; then
+			sed -i '/^OPENSSL_OPTIONS:=/a\  no-x942kdf \\' "$OPENSSL_MAKEFILE"
+			echo "✅ 已添加 no-x942kdf 选项到 OpenSSL 配置"
+			echo "  - 已禁用 X9.42 KDF 模块（该模块在 3.5.6 中有 bug）"
+		else
+			echo "✓ OpenSSL Makefile 已包含 no-x942kdf 选项"
+		fi
+	else
+		echo "✓ OpenSSL 版本为 $OPENSSL_VERSION，不需要修复"
+	fi
+else
+	echo "✓ OpenSSL 未安装或版本不是 3.5.6，跳过修复"
 fi
