@@ -7,10 +7,11 @@ echo " "
 echo ">>> 正在修复 QuickStart 温度显示..."
 
 # QuickStart 可能在多个位置，按优先级查找
+# 注意：feeds install 后，文件在 wrt/feeds/ 而不是 wrt/package/feeds/
 QUICKSTART_PATHS=(
 	"../feeds/nas_luci/luci/luci-app-quickstart/luasrc/controller/istore_backend.lua"
 	"../feeds/nas_luci/applications/luci-app-quickstart/luasrc/controller/istore_backend.lua"
-	"../package/feeds/nas_luci/luci-app-quickstart/luasrc/controller/istore_backend.lua"
+	"feeds/nas_luci/luci-app-quickstart/luasrc/controller/istore_backend.lua"
 )
 
 QUICKSTART_FILE=""
