@@ -100,7 +100,11 @@ fi
 
 #无WIFI配置标志
 if [[ "${WRT_CONFIG,,}" == *"wifi"* && "${WRT_CONFIG,,}" == *"no"* ]]; then
-	echo "WRT_WIFI=wifi-no" >> $GITHUB_ENV
+	export WRT_WIFI=wifi-no
+	# 如果在 GitHub Actions 环境中，也写入 GITHUB_ENV
+	if [ -n "$GITHUB_ENV" ]; then
+		echo "WRT_WIFI=wifi-no" >> $GITHUB_ENV
+	fi
 fi
 
 #高通平台调整

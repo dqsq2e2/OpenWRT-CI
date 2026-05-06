@@ -22,61 +22,67 @@ if [ ! -f "${NETFILTER_MK}.bak" ]; then
     echo "  ✓ 已备份原文件"
 fi
 
-# 方案：将 kmod-iptables 改为空包（只保留依赖关系），所有文件由 kmod-nf-ipt 提供
-# 这样可以避免文件冲突，同时保持依赖链完整
+# 方案：直接替换三个 KernelPackage 定义
 
-# 1. 修改 kmod-iptables：清空 FILES 和 AUTOLOAD，添加对 kmod-nf-ipt 的依赖
-sed -i '/^define KernelPackage\/iptables$/,/^endef$/{
-    s|^  FILES:=.*$|  FILES:=|
-    s|^  AUTOLOAD:=.*$|  AUTOLOAD:=|
-    /^  DEPENDS:=/d
-    /^  HIDDEN:=/d
-    /^  TITLE:=/a\  DEPENDS:=@!LINUX_6_12 +kmod-nf-ipt\n  HIDDEN:=1
-}' "$NETFILTER_MK"
+# 1. 提取文件开头到 kmod-iptables 之前的内容
+sed -n '1,/^define KernelPackage\/iptables$/p' "${NETFILTER_MK}.bak" | head -n -1 > "$NETFILTER_MK"
 
-# 2. 修复 kmod-nf-ipt 的 FILES，只使用实际存在的 x_tables.ko
-# 注意：在新内核（6.18+）中，ip_tables.ko 已经不存在，只有 x_tables.ko
-# 检查是否使用了 $(foreach ...) 变量（这可能导致文件列表为空）
-if grep -A 10 "^define KernelPackage/nf-ipt$" "$NETFILTER_MK" | grep -q 'FILES:=.*\$(foreach'; then
-    echo "  ⚠ kmod-nf-ipt 使用变量引用，替换为明确的文件路径"
-    
-    # 替换 FILES 行为实际的文件列表（只包含 x_tables.ko）
-    # 使用 wildcard 来兼容不同内核版本（有些版本可能有 ip_tables.ko）
-    sed -i '/^define KernelPackage\/nf-ipt$/,/^endef$/{
-        s|^  FILES:=.*$|  FILES:= \\\n    \$(LINUX_DIR)/net/netfilter/x_tables.ko \\\n    \$(wildcard \$(LINUX_DIR)/net/ipv4/netfilter/ip_tables.ko)|
-    }' "$NETFILTER_MK"
-    
-    # 同时修复 AUTOLOAD（只加载 x_tables，ip_tables 如果存在会自动加载）
-    sed -i '/^define KernelPackage\/nf-ipt$/,/^endef$/{
-        s|^  AUTOLOAD:=.*$|  AUTOLOAD:=\$(call AutoProbe,x_tables)|
-    }' "$NETFILTER_MK"
-    
-    echo "  ✓ 已修复 kmod-nf-ipt 的 FILES 和 AUTOLOAD"
-    echo "  ℹ 注意：新内核中只有 x_tables.ko，ip_tables.ko 已不存在"
-else
-    echo "  ℹ kmod-nf-ipt 的 FILES 已经是明确路径"
-fi
+# 2. 写入修复后的 kmod-iptables
+cat >> "$NETFILTER_MK" << 'EOF'
+define KernelPackage/iptables
+  SUBMENU:=$(NF_MENU)
+  TITLE:=Iptables legacy
+  DEPENDS:=@!LINUX_6_12 +kmod-nf-ipt
+  HIDDEN:=1
+  KCONFIG:= \
+	CONFIG_IP_NF_IPTABLES_LEGACY \
+	CONFIG_NETFILTER_XTABLES \
+	CONFIG_NETFILTER_XTABLES_LEGACY=y \
+	CONFIG_IP6_NF_IPTABLES_LEGACY \
+	CONFIG_BRIDGE_NF_EBTABLES_LEGACY
+  FILES:=
+  AUTOLOAD:=
+endef
 
-# 3. 修复 kmod-nf-ipt6（IPv6 版本）的 FILES
-# 同样的问题：ip6_tables.ko 在新内核中也不存在
-if grep -A 10 "^define KernelPackage/nf-ipt6$" "$NETFILTER_MK" | grep -q 'FILES:=.*\$(foreach'; then
-    echo "  ⚠ kmod-nf-ipt6 使用变量引用，替换为明确的文件路径"
-    
-    # 替换 FILES 行（使用 wildcard 兼容不同内核版本）
-    sed -i '/^define KernelPackage\/nf-ipt6$/,/^endef$/{
-        s|^  FILES:=.*$|  FILES:= \\\n    \$(wildcard \$(LINUX_DIR)/net/ipv6/netfilter/ip6_tables.ko)|
-    }' "$NETFILTER_MK"
-    
-    # 修复 AUTOLOAD
-    sed -i '/^define KernelPackage\/nf-ipt6$/,/^endef$/{
-        s|^  AUTOLOAD:=.*$|  AUTOLOAD:=\$(call AutoProbe,ip6_tables)|
-    }' "$NETFILTER_MK"
-    
-    echo "  ✓ 已修复 kmod-nf-ipt6 的 FILES 和 AUTOLOAD"
-    echo "  ℹ 注意：新内核中 ip6_tables.ko 可能不存在"
-else
-    echo "  ℹ kmod-nf-ipt6 的 FILES 已经是明确路径"
-fi
+$(eval $(call KernelPackage,iptables))
+
+EOF
+
+# 3. 写入修复后的 kmod-nf-ipt
+cat >> "$NETFILTER_MK" << 'EOF'
+define KernelPackage/nf-ipt
+  SUBMENU:=$(NF_MENU)
+  TITLE:=Iptables core
+  KCONFIG:=$(KCONFIG_NF_IPT)
+  DEPENDS:=+!LINUX_6_12:kmod-iptables
+  FILES:= \
+    $(LINUX_DIR)/net/netfilter/x_tables.ko \
+    $(wildcard $(LINUX_DIR)/net/ipv4/netfilter/ip_tables.ko)
+  AUTOLOAD:=$(call AutoProbe,x_tables)
+endef
+
+$(eval $(call KernelPackage,nf-ipt))
+
+EOF
+
+# 4. 写入修复后的 kmod-nf-ipt6
+cat >> "$NETFILTER_MK" << 'EOF'
+define KernelPackage/nf-ipt6
+  SUBMENU:=$(NF_MENU)
+  TITLE:=Ip6tables core
+  KCONFIG:=$(KCONFIG_NF_IPT6)
+  FILES:= \
+    $(wildcard $(LINUX_DIR)/net/ipv6/netfilter/ip6_tables.ko)
+  AUTOLOAD:=$(call AutoProbe,ip6_tables)
+  DEPENDS:=+kmod-nf-ipt +kmod-nf-log6
+endef
+
+$(eval $(call KernelPackage,nf-ipt6))
+
+EOF
+
+# 5. 添加文件剩余部分（从 kmod-ipt-core 开始）
+sed -n '/^define KernelPackage\/ipt-core$/,$p' "${NETFILTER_MK}.bak" >> "$NETFILTER_MK"
 
 echo ""
 echo "✅ Netfilter 模块冲突修复完成"

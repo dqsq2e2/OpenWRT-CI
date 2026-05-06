@@ -5,7 +5,7 @@
 PKG_PATH="$GITHUB_WORKSPACE/wrt/package/"
 
 #修复 OpenSSL 3.5.6 编译错误
-OPENSSL_FIX="$GITHUB_WORKSPACE/OpenWRT-CI-main/Scripts/Fix-OpenSSL-3.5.6.sh"
+OPENSSL_FIX="$GITHUB_WORKSPACE/Scripts/Fix-OpenSSL-3.5.6.sh"
 if [ -f "$OPENSSL_FIX" ]; then
 	echo " " && cd "$GITHUB_WORKSPACE/wrt/"
 	
@@ -15,7 +15,7 @@ if [ -f "$OPENSSL_FIX" ]; then
 fi
 
 #修复 netfilter 模块冲突（opkg + Docker 环境）
-NETFILTER_FIX="$GITHUB_WORKSPACE/OpenWRT-CI-main/Scripts/Fix-Netfilter-Conflict.sh"
+NETFILTER_FIX="$GITHUB_WORKSPACE/Scripts/Fix-Netfilter-Conflict.sh"
 if [ -f "$NETFILTER_FIX" ]; then
 	echo " " && cd "$GITHUB_WORKSPACE/wrt/"
 	
@@ -114,7 +114,7 @@ if [ -f "$RUST_FILE" ]; then
 fi
 
 #修复 QuickStart 首页温度显示（支持 MT7986A）
-QUICKSTART_FIX="$GITHUB_WORKSPACE/OpenWRT-CI-main/Scripts/Fix-Quickstart-Temperature.sh"
+QUICKSTART_FIX="$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh"
 if [ -f "$QUICKSTART_FIX" ]; then
 	echo " " && cd "$GITHUB_WORKSPACE/wrt/"
 	
