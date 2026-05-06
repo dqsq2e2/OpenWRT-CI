@@ -112,10 +112,6 @@ jobs:
         run: |
           find ./ -maxdepth 3 -type f -iregex ".*\(txt\|sh\)$" -exec dos2unix {} \; -exec chmod +x {} \;
 
-      - name: Add iStore Feeds
-        run: |
-          $GITHUB_WORKSPACE/Scripts/Feeds.sh
-
       - name: Check Caches
         id: check-cache
         if: env.WRT_TEST != 'true'
@@ -156,8 +152,18 @@ jobs:
         run: |
           cd ./wrt/
 
+          $GITHUB_WORKSPACE/Scripts/Feeds.sh
+
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+
+      - name: Fix QuickStart Temperature
+        run: |
+          cd ./wrt/package/
+
+          if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh" ]; then
+            bash "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh"
+          fi
 
       - name: Custom Packages
         run: |
