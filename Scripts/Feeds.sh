@@ -9,15 +9,10 @@ echo "=========================================="
 echo "添加 Feeds 源"
 echo "=========================================="
 
-cd "$GITHUB_WORKSPACE/wrt/"
-
-if [ ! -f "feeds.conf.default" ]; then
-    echo "❌ 错误: feeds.conf.default 文件不存在"
-    exit 1
-fi
-
 # 备份原始 feeds
-cp feeds.conf.default feeds.conf.default.bak
+if [ ! -f "feeds.conf.default.bak" ]; then
+    cp feeds.conf.default feeds.conf.default.bak
+fi
 
 # 添加 NAS feeds（QuickStart 在这里）
 if ! grep -q "linkease/nas-packages" feeds.conf.default; then
@@ -43,21 +38,7 @@ echo "=========================================="
 cat feeds.conf.default
 echo "=========================================="
 
-# 更新所有 feeds
 echo ""
-echo "=========================================="
-echo "更新 feeds"
-echo "=========================================="
-./scripts/feeds update -a
-
-# 安装所有 feeds（使用标准方式）
-echo ""
-echo "=========================================="
-echo "安装 feeds"
-echo "=========================================="
-./scripts/feeds install -a
-
-echo ""
-echo "✅ Feeds 配置完成"
+echo "✅ Feeds 源配置完成"
 echo "  - NAS feeds: 包含 QuickStart、iStoreOS 等"
 echo "  - iStore feeds: 包含 iStore 商店"
