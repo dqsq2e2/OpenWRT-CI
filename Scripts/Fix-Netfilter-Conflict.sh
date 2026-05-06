@@ -54,4 +54,3 @@ echo "  3. kmod-nf-ipt6 保持不变（ip6_tables.ko 不冲突）"
 echo "  4. 避免了 opkg 的文件冲突错误"
 echo "  5. 参考：https://github.com/openwrt/openwrt/issues/22992"
 echo ""
-

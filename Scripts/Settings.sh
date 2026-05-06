@@ -113,34 +113,3 @@ if [[ "${WRT_TARGET^^}" == *"QUALCOMMAX"* ]]; then
 		echo "qualcommax set up nowifi successfully!"
 	fi
 fi
-
-
-# 修复 OpenSSL 3.5.6 编译错误（在 feeds install 之后执行）
-echo " "
-echo ">>> 正在修复 OpenSSL 3.5.6 编译错误..."
-
-OPENSSL_MAKEFILE="./feeds/packages/libs/openssl/Makefile"
-
-if [ -f "$OPENSSL_MAKEFILE" ]; then
-	# 检查是否是 OpenSSL 3.5.6
-	OPENSSL_VERSION=$(grep -Po 'PKG_VERSION:=\K.*' "$OPENSSL_MAKEFILE" 2>/dev/null)
-	if [[ "$OPENSSL_VERSION" == "3.5.6" ]]; then
-		# 备份原始文件
-		if [ ! -f "${OPENSSL_MAKEFILE}.bak" ]; then
-			cp "$OPENSSL_MAKEFILE" "${OPENSSL_MAKEFILE}.bak"
-		fi
-		
-		# 在 OPENSSL_OPTIONS 中添加 no-x942kdf 选项
-		if ! grep -q "no-x942kdf" "$OPENSSL_MAKEFILE"; then
-			sed -i '/^OPENSSL_OPTIONS:=/a\  no-x942kdf \\' "$OPENSSL_MAKEFILE"
-			echo "✅ 已添加 no-x942kdf 选项到 OpenSSL 配置"
-			echo "  - 已禁用 X9.42 KDF 模块（该模块在 3.5.6 中有 bug）"
-		else
-			echo "✓ OpenSSL Makefile 已包含 no-x942kdf 选项"
-		fi
-	else
-		echo "✓ OpenSSL 版本为 $OPENSSL_VERSION，不需要修复"
-	fi
-else
-	echo "✓ OpenSSL 未安装或版本不是 3.5.6，跳过修复"
-fi

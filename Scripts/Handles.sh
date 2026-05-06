@@ -102,11 +102,6 @@ if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-Netfilter-Conflict.sh" ]; then
 	bash "$GITHUB_WORKSPACE/Scripts/Fix-Netfilter-Conflict.sh"
 fi
 
-# 修复 OpenSSL 3.5.6 编译错误
-if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-OpenSSL-3.5.6.sh" ]; then
-	bash "$GITHUB_WORKSPACE/Scripts/Fix-OpenSSL-3.5.6.sh"
-fi
-
 # 修复 QuickStart 温度显示
 if [ -f "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh" ]; then
 	bash "$GITHUB_WORKSPACE/Scripts/Fix-Quickstart-Temperature.sh"
